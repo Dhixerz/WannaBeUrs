@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="description" content="May I be urs?" />
+  <title>May I be urs? ✏️</title>
+  
+  <!-- Redirect on refresh -->
+  <script>
+    if (performance.getEntriesByType("navigation")[0].type === "reload") {
+      window.location.href = "index.html";
+    }
+  </script>
+
+  <!-- Shared Stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐻</text></svg>" />
+</head>
+<body>
+
+  <!-- ====== Floating Emoji Background ====== -->
+  <div class="emoji-bg" id="emojiBg" aria-hidden="true"></div>
+
+  <!-- ====== Full-Screen Proposal Layout ====== -->
+  <div class="proposal-page">
+
+    <!-- Top prompt bar -->
+    <div class="prompt-bar">
+      <h1>May I be urs? </h1>
+    </div>
+
+    <!-- The two answer words, centered in the middle -->
+    <div class="answer-area" id="answerArea">
+      <span class="answer-word answer-yes" id="answerYes">OFC!</span>
+      <span class="answer-word answer-no" id="answerNo">Nope</span>
+    </div>
+
+    <!-- Drawing canvas — covers entire viewport -->
+    <canvas class="draw-canvas" id="drawCanvas"></canvas>
+
+    <!-- Cute Popup Modal -->
+    <div class="cute-modal-overlay" id="cuteModalOverlay">
+      <div class="cute-modal">
+        <p id="cuteModalText">Message</p>
+        <button onclick="closeModal()">Okay! 💕</button>
+      </div>
+    </div>
+
+    <!-- Tiny pen indicator -->
+    <div class="pen-indicator">✏️ Draw on screen!</div>
+  </div>
+
+  <!-- ====== JavaScript ====== -->
+  <script>
+    // ============================================
+    // Floating Emoji Generator
+    // ============================================
+    (function spawnEmojis() {
+      const container = document.getElementById('emojiBg');
+      const emojis = ['🐻', '🍣', '💕', '🌸', '✨'];
+      const COUNT = 18;
+
+      for (let i = 0; i < COUNT; i++) {
+        const span = document.createElement('span');
+        span.textContent = emojis[i % emojis.length];
+        span.style.left = `${Math.random() * 100}%`;
+        span.style.fontSize = `${1.2 + Math.random() * 1.8}rem`;
+        span.style.animationDuration = `${8 + Math.random() * 12}s`;
+        span.style.animationDelay = `${Math.random() * 10}s`;
+        container.appendChild(span);
+      }
+    })();
+
+    // ============================================
+    // Canvas Setup
+    // ============================================
+    const canvas = document.getElementById('drawCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Drawing state
+    let isDrawing = false;
+    let drawnPoints = []; // Store all {x, y} points of the current stroke
+
+    // Pen style — pink marker feel
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    function getLineWidth() {
+      // Thinner on mobile for precision
+      return window.innerWidth < 600 ? 4 : 6;
+    }
+
+    function setStrokeStyle() {
+      ctx.strokeStyle = 'rgba(255, 110, 150, 0.7)';
+      ctx.lineWidth = getLineWidth();
+    }
+
+    // ============================================
+    // Drawing — Mouse Events
+    // ============================================
+    canvas.addEventListener('mousedown', (e) => {
+      startDraw(e.clientX, e.clientY);
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (!isDrawing) return;
+      continueDraw(e.clientX, e.clientY);
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      endDraw();
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      if (isDrawing) endDraw();
+    });
+
+    // ============================================
+    // Drawing — Touch Events (Mobile)
+    // ============================================
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      startDraw(touch.clientX, touch.clientY);
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (!isDrawing) return;
+      const touch = e.touches[0];
+      continueDraw(touch.clientX, touch.clientY);
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      endDraw();
+    }, { passive: false });
+
+    // ============================================
+    // Core Drawing Functions
+    // ============================================
+    function startDraw(x, y) {
+      isDrawing = true;
+      drawnPoints = [{ x, y }];
+      setStrokeStyle();
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    }
+
+    function continueDraw(x, y) {
+      drawnPoints.push({ x, y });
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    }
+
+    function endDraw() {
+      if (!isDrawing) return;
+      isDrawing = false;
+      ctx.beginPath(); // reset path
+
+      // Only process if they actually drew something
+      if (drawnPoints.length < 5) {
+        drawnPoints = [];
+        return;
+      }
+
+      // Get bounding box of the drawn stroke
+      const drawBounds = getDrawnBoundingBox();
+
+      // Check intersection with Yes / No elements
+      const yesEl = document.getElementById('answerYes');
+      const noEl = document.getElementById('answerNo');
+
+      const yesRect = yesEl.getBoundingClientRect();
+      const noRect = noEl.getBoundingClientRect();
+
+      const hitYes = rectsIntersect(drawBounds, yesRect);
+      const hitNo = rectsIntersect(drawBounds, noRect) && noEl.style.display !== 'none';
+
+      if (hitYes && !hitNo) {
+        // They circled YES! → Redirect 🎉
+        handleYes();
+      } else if (hitNo && !hitYes) {
+        // They circled NO → punish them 😤
+        handleNo();
+      } else if (hitYes && hitNo) {
+        // They circled both — nudge towards Yes
+        handleYes();
+      } else {
+        // Missed both — clear and hint
+        handleMiss();
+      }
+
+      drawnPoints = [];
+    }
+
+    // ============================================
+    // Bounding Box Helpers
+    // ============================================
+    function getDrawnBoundingBox() {
+      let minX = Infinity, maxX = -Infinity;
+      let minY = Infinity, maxY = -Infinity;
+
+      for (const p of drawnPoints) {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+      }
+
+      return { left: minX, right: maxX, top: minY, bottom: maxY };
+    }
+
+    function rectsIntersect(a, b) {
+      // a = { left, right, top, bottom }, b = DOMRect
+      return !(
+        a.right < b.left ||
+        a.left > b.right ||
+        a.bottom < b.top ||
+        a.top > b.bottom
+      );
+    }
+
+    // ============================================
+    // Interaction Handlers
+    // ============================================
+    const answerYes = document.getElementById('answerYes');
+    const answerNo = document.getElementById('answerNo');
+    const modalOverlay = document.getElementById('cuteModalOverlay');
+    const modalText = document.getElementById('cuteModalText');
+
+    let noCount = 0;
+    const MAX_NO = 5;
+    let modalCallback = null;
+
+    // Current sizes (rem) for progressive scaling
+    let yesFontSize = 3; // starting at 3rem
+    let noFontSize = 3;
+
+    const noMessages = [
+      'Error! Try again!',
+      'Are you sure?? 🐻💔',
+      'Think about it... 🍣',
+      'Pretty please?',
+      'There is only one answer~ 💕'
+    ];
+
+    function showModal(msg, onOkay = null) {
+      modalText.textContent = msg;
+      modalOverlay.classList.add('active');
+      modalCallback = onOkay;
+    }
+
+    // This needs to be available globally in HTML onClick
+    window.closeModal = function() {
+      modalOverlay.classList.remove('active');
+      if (modalCallback) {
+        modalCallback();
+        modalCallback = null;
+      }
+    };
+
+    function handleYes() {
+      clearCanvas();
+      showModal('Yayy! You got it right~ 💕', () => {
+        window.location.href = 'yay.html';
+      });
+    }
+
+    function handleNo() {
+      noCount++;
+      clearCanvas();
+
+      // Show rotating message in popup
+      const msg = noMessages[Math.min(noCount - 1, noMessages.length - 1)];
+      showModal(msg, () => {
+        // Grow "Yes"
+        yesFontSize += 1.5;
+        answerYes.style.fontSize = `${yesFontSize}rem`;
+
+        // Shrink "No"
+        noFontSize = Math.max(noFontSize - 0.5, 0.3);
+        answerNo.style.fontSize = `${noFontSize}rem`;
+        answerNo.style.opacity = Math.max(1 - noCount * 0.2, 0);
+
+        // By 5th attempt, No vanishes
+        if (noCount >= MAX_NO) {
+          answerNo.style.display = 'none';
+        }
+      });
+    }
+
+    function handleMiss() {
+      clearCanvas();
+      showModal('Circle one of the words! ✏️');
+    }
+
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  </script>
+</body>
+</html>

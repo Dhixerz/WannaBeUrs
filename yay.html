@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Yayy! 🎉 Official celebration — you said YES!" />
+  <title>Yayy! 🎉🐻🍣</title>
+  
+  <!-- Redirect on refresh -->
+  <script>
+    if (performance.getEntriesByType("navigation")[0].type === "reload") {
+      window.location.href = "index.html";
+    }
+  </script>
+
+  <!-- Shared Stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- canvas-confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎉</text></svg>" />
+</head>
+<body>
+
+  <!-- ====== Fullscreen Video Background ====== -->
+  <style>
+    .fullscreen-bg {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      min-width: 100vw;
+      min-height: 100vh;
+      width: auto;
+      height: auto;
+      z-index: 0;
+      transform: translateX(-50%) translateY(-50%);
+      object-fit: cover; /* Ensures it zooms/crops nicely on mobile while centering */
+      pointer-events: none;
+      opacity: 0.85; /* Slight opacity so the content pops */
+    }
+    
+    /* Make sure night background doesn't hide video */
+    body { background: #000; }
+  </style>
+
+  <video id="bgVideo" autoplay loop playsinline class="fullscreen-bg">
+    <source src="https://ik.imagekit.io/Dhixerz/The%20Christmas/Soda%20Pop%20Official%20Lyric%20Video%20KPop%20Demon%20Hunters%20Sony%20Animation%20(online-video-cutter.com).mp4" type="video/mp4" />
+  </video>
+
+  <!-- ====== Play / Pause Floating Button ====== -->
+  <button class="play-pause-btn" id="playPauseBtn" title="Play / Pause Song" aria-label="Play or Pause Song">
+    ▶️
+  </button>
+
+  <!-- ====== Main Celebration Card ====== -->
+  <div class="card" style="max-width: 520px;">
+    <h1 class="big-title">Yayy! 🎉</h1>
+    
+    <style>
+      .mini-bouquet {
+        position: relative;
+        height: 140px;
+        display: flex;
+        justify-content: center;
+        margin: 10px auto 20px;
+        width: 140px;
+      }
+      .mini-bouquet .mini-rose {
+        position: absolute;
+        bottom: 0;
+        border: none;
+        width: 140px;
+        height: 200px;
+        pointer-events: none;
+        transform-origin: bottom center;
+      }
+      .mr-1 { transform: rotate(-25deg) scale(0.65) translateX(-40px); z-index: 1; }
+      .mr-2 { transform: rotate(0deg) scale(0.7) translateY(-10px); z-index: 2; }
+      .mr-3 { transform: rotate(25deg) scale(0.65) translateX(40px); z-index: 1; }
+    </style>
+    
+    <div class="mini-bouquet" aria-hidden="true">
+      <iframe class="mini-rose mr-1" src="single_rose.html" scrolling="no"></iframe>
+      <iframe class="mini-rose mr-2" src="single_rose.html" scrolling="no"></iframe>
+      <iframe class="mini-rose mr-3" src="single_rose.html" scrolling="no"></iframe>
+    </div>
+
+    <p class="subtitle">I am the luckiest woman!</p>
+
+    <hr class="divider" />
+
+    <!-- Certificate Link Button -->
+    <a
+      href="https://drive.google.com/file/d/13zENtav7LOChJdbZ8YrK7a7uKclKfu1E/view?usp=sharing"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="btn-certificate"
+      id="btnCertificate"
+    >
+      Get Your Certificate of Relationship!
+    </a>
+  </div>
+
+  <!-- ====== JavaScript ====== -->
+  <script>
+    // ============================================
+    // Floating Emoji Generator (Removed for Video Background)
+    // ============================================
+
+    // ============================================
+    // Confetti Explosion on Load
+    // ============================================
+    function fireConfetti() {
+      // Massive initial burst
+      confetti({
+        particleCount: 200,
+        spread: 100,
+        origin: { y: 0.6 },
+        colors: ['#ffd6e0', '#ffb3c6', '#ff8fab', '#c3e0f7', '#a2cdf0', '#7eb8e4'],
+      });
+
+      // Side cannons for drama ✨
+      setTimeout(() => {
+        confetti({ particleCount: 80, angle: 60, spread: 70, origin: { x: 0 }, colors: ['#ffb3c6', '#a2cdf0'] });
+        confetti({ particleCount: 80, angle: 120, spread: 70, origin: { x: 1 }, colors: ['#ff8fab', '#7eb8e4'] });
+      }, 400);
+
+      // One more gentle burst
+      setTimeout(() => {
+        confetti({ particleCount: 120, spread: 120, origin: { y: 0.5 }, colors: ['#ffd6e0', '#c3e0f7', '#ff8fab'] });
+      }, 900);
+    }
+
+    window.addEventListener('load', fireConfetti);
+
+    // ============================================
+    // Video Autoplay + Play/Pause Toggle
+    // ============================================
+    const bgMedia = document.getElementById('bgVideo');
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    let isPlaying = false;
+
+    // Attempt autoplay on load
+    window.addEventListener('load', () => {
+      const playPromise = bgMedia.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          isPlaying = true;
+          playPauseBtn.textContent = '⏸️';
+        }).catch(() => {
+          // Autoplay blocked by browser — user can click the button
+          isPlaying = false;
+          playPauseBtn.textContent = '▶️';
+        });
+      }
+    });
+
+    playPauseBtn.addEventListener('click', () => {
+      if (isPlaying) {
+        bgMedia.pause();
+        playPauseBtn.textContent = '▶️';
+      } else {
+        bgMedia.play();
+        playPauseBtn.textContent = '⏸️';
+      }
+      isPlaying = !isPlaying;
+    });
+  </script>
+</body>
+</html>
